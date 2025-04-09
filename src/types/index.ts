@@ -24,3 +24,11 @@ export type ConversationState = {
   prompt: string;
   isTyping: Record<string, boolean>;
 };
+
+export type ApiKeys = {
+  openai?: string;  // für ChatGPT
+  anthropic?: string; // für Claude
+  google?: string;   // für Gemini
+  deepseek?: string;  // für DeepSeek
+};
+

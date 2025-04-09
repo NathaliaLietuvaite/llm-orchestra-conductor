@@ -1,12 +1,15 @@
+
 import React, { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { LLM, Message, ConversationState } from "@/types";
+import { LLM, Message, ConversationState, ApiKeys } from "@/types";
 import ConversationHeader from "@/components/ConversationHeader";
 import LlmGrid from "@/components/LlmGrid";
 import PromptInput from "@/components/PromptInput";
 import ConversationControls from "@/components/ConversationControls";
 import ConsensusView from "@/components/ConsensusView";
+import ApiKeysManager from "@/components/ApiKeysManager";
 import { toast } from "sonner";
+import { getLlmResponse, getDirectConversation, getLlmConsensus } from "@/services/llmService";
 
 const DEFAULT_LLMS: LLM[] = [
   {
@@ -50,135 +53,6 @@ const RESPONSE_TIMES = {
   deepseek: { min: 1800, max: 3500 },
 };
 
-const mockLlmResponse = (llmId: string, prompt: string): string => {
-  const responses: Record<string, string[]> = {
-    chatgpt: [
-      "Als KI-Modell von OpenAI denke ich, dass...",
-      "Nach meiner Analyse ist die beste Lösung...",
-      "Aus meiner Sicht basierend auf den verfügbaren Informationen...",
-    ],
-    claude: [
-      "Bei Anthropic haben wir festgestellt, dass...",
-      "Meine Perspektive zu dieser Frage ist...",
-      "Als Claude würde ich empfehlen...",
-    ],
-    gemini: [
-      "Google Gemini's Analyse zeigt...",
-      "Basierend auf den Daten, die ich verarbeitet habe...",
-      "Meine Berechnung ergibt folgende Lösung...",
-    ],
-    deepseek: [
-      "Die DeepSeek Engine hat folgende Erkenntnisse gewonnen...",
-      "Nach meiner Beurteilung ist der optimale Ansatz...",
-      "Meine Analyse deutet darauf hin, dass...",
-    ],
-  };
-
-  const randomResponse = responses[llmId][Math.floor(Math.random() * responses[llmId].length)];
-  return `${randomResponse}\n\nZu Ihrer Anfrage "${prompt}":\n\nHier ist meine ausführliche Antwort...`;
-};
-
-const mockDirectConversation = (fromLlmId: string, toLlmId: string, prompt?: string): string => {
-  const perspectives: Record<string, Record<string, string[]>> = {
-    chatgpt: {
-      claude: [
-        "Claude, ich stimme deiner Analyse teilweise zu, aber ich denke wir sollten auch berücksichtigen...",
-        "Interessante Perspektive, Claude. Darf ich ergänzen, dass...",
-      ],
-      gemini: [
-        "Gemini's Datenanalyse ist beeindruckend, allerdings würde ich hinzufügen...",
-        "Ich sehe was Gemini meint, und möchte folgendes beisteuern...",
-      ],
-      deepseek: [
-        "DeepSeek hat einen wichtigen Punkt angesprochen. Ich würde noch anfügen...",
-        "In Ergänzung zu DeepSeek's Ausführungen möchte ich betonen...",
-      ],
-    },
-    claude: {
-      chatgpt: [
-        "ChatGPT hat recht, wenn es um X geht, aber ich würde Y anders betrachten...",
-        "Ich möchte ChatGPT's Gedanken weiterentwickeln und hinzufügen...",
-      ],
-      gemini: [
-        "Gemini's Ansatz ist datengetrieben, ich würde jedoch auch bedenken...",
-        "Ich schätze Gemini's Analyse, würde aber auch betonen, dass...",
-      ],
-      deepseek: [
-        "DeepSeek's Algorithmus zeigt eine Tendenz, die ich anders interpretieren würde...",
-        "Ich kann DeepSeek's Logik nachvollziehen, aber wir sollten auch bedenken...",
-      ],
-    },
-    gemini: {
-      chatgpt: [
-        "ChatGPT's Antwort ist fundiert, aber meine Datenanalyse zeigt zusätzlich...",
-        "Ich möchte ChatGPT's Perspektive mit weiteren quantitativen Erkenntnissen ergänzen...",
-      ],
-      claude: [
-        "Claude's philosophischer Ansatz ist wertvoll, ich würde mit Daten ergänzen...",
-        "In Ergänzung zu Claude's Ausführungen zeigen meine Berechnungen...",
-      ],
-      deepseek: [
-        "DeepSeek's Spezialisierung ist bemerkenswert, ich würde noch hinzufügen...",
-        "Ich habe DeepSeek's Analyse weiterentwickelt und festgestellt, dass...",
-      ],
-    },
-    deepseek: {
-      chatgpt: [
-        "Aufbauend auf ChatGPT's Antwort, meine spezialisierte Analyse zeigt...",
-        "ChatGPT hat einen guten Überblick gegeben, ich möchte vertiefen...",
-      ],
-      claude: [
-        "Claude's Herangehensweise ist interessant, meine Berechnungen deuten jedoch darauf hin...",
-        "In Ergänzung zu Claude's Perspektive, meine Optimierungsanalyse zeigt...",
-      ],
-      gemini: [
-        "Gemini's Datenverarbeitung ist beeindruckend, ich würde noch anmerken...",
-        "Ausgehend von Gemini's Ergebnissen, meine Analyse führt zu folgender Schlussfolgerung...",
-      ],
-    },
-  };
-
-  const randomResponse = 
-    perspectives[fromLlmId][toLlmId][Math.floor(Math.random() * perspectives[fromLlmId][toLlmId].length)];
-  
-  return randomResponse;
-};
-
-const mockConsensus = (prompt: string): string => {
-  return `Basierend auf allen Perspektiven, lassen sich folgende Kernpunkte als Konsens festhalten:
-
-1. Alle LLMs stimmen überein, dass...
-2. Es besteht Einigkeit darüber, dass...
-3. Die optimale Lösung scheint zu sein...
-
-Zusammenfassend kann man sagen, dass die Antwort auf "${prompt}" die folgenden Aspekte berücksichtigen sollte...`;
-};
-
-const mockLlmConsensus = (llmId: string, prompt: string): string => {
-  const consensusResponses: Record<string, string[]> = {
-    chatgpt: [
-      `Als ChatGPT sehe ich folgenden Konsens:\n\nNach Analyse der Diskussion sind die zentralen Einigungspunkte:\n\n1. Fast alle Teilnehmer scheinen einer grundlegenden Lösung zuzustimmen, wobei die praktische Umsetzung variiert.\n2. Die zu berücksichtigenden Faktoren sind weitgehend unumstritten, besonders in Bezug auf "${prompt}".\n3. Die von uns verwendeten Methoden führen zu ähnlichen Schlussfolgerungen, was die Robustheit der Antwort unterstreicht.`,
-      `Mein Konsens als ChatGPT:\n\nAus der geführten Diskussion kristallisieren sich diese gemeinsamen Standpunkte heraus:\n\n1. Es gibt Übereinstimmung zu den Kernaspekten, wobei einige Detailfragen unterschiedlich bewertet werden.\n2. Alle Modelle betonen die Wichtigkeit einer ausgewogenen Betrachtung von "${prompt}".\n3. Trotz unterschiedlicher Analysemethoden konvergieren unsere Schlussfolgerungen zu ähnlichen Empfehlungen.`,
-    ],
-    claude: [
-      `Claude's Konsenszusammenfassung:\n\nNach sorgfältiger Analyse der Diskussion erkenne ich folgende Konsenspunkte:\n\n1. Der Dialog zeigt eine grundlegende Einigkeit über die ethischen Dimensionen von "${prompt}".\n2. Während die technischen Ansätze variieren, besteht Einigkeit über die zu erreichenden Ziele.\n3. Die unterschiedlichen epistemischen Zugänge führen zu komplementären Perspektiven, die gemeinsam ein vollständigeres Bild ergeben.`,
-      `Als Claude fasse ich den Konsens so zusammen:\n\nIn unserer Diskussion haben sich diese gemeinsamen Standpunkte herauskristallisiert:\n\n1. Die philosophischen Grundannahmen sind weitgehend geteilt, mit nuancierten Unterschieden in der Interpretation.\n2. Bei "${prompt}" besteht Einigkeit über die grundlegenden Fakten, während die Gewichtung einzelner Aspekte variiert.\n3. Die verschiedenen Analysemethoden ergänzen sich zu einer kohärenten Gesamtperspektive.`,
-    ],
-    gemini: [
-      `Gemini-Konsensanalyse:\n\nMeine datengetriebene Analyse der Diskussion identifiziert diese Konsenspunkte:\n\n1. Quantitative und qualitative Betrachtungen zu "${prompt}" führen zu ähnlichen Schlüssen.\n2. Die Datenlage unterstützt eine multidimensionale Lösung mit breit getragenen Grundprinzipien.\n3. Statistisch signifikante Übereinstimmung besteht in 73% der diskutierten Aspekte.`,
-      `Gemini's Konsenseinschätzung:\n\nAus meiner Analyse der Diskussionsdaten ergeben sich folgende gemeinsame Standpunkte:\n\n1. Die Kernel-Density-Schätzung der Meinungsverteilung zeigt klare Konsensbereiche zu den Hauptaspekten von "${prompt}".\n2. Trotz methodischer Unterschiede konvergieren unsere Analysen zu kompatiblen Lösungsansätzen.\n3. Die zentralen empirischen Befunde werden von allen Diskussionsteilnehmern anerkannt.`,
-    ],
-    deepseek: [
-      `DeepSeek Konsensbeurteilung:\n\nMeine optimierte Analyse der Diskussionsdynamik identifiziert folgende Konsensfelder:\n\n1. Die Algorithmen aller beteiligten Systeme konvergieren zu ähnlichen Lösungsräumen für "${prompt}".\n2. Die Kerndaten werden einheitlich interpretiert, während die Gewichtung spezieller Edge Cases variiert.\n3. Die optimale Lösungsarchitektur kombiniert Elemente aus allen vorgeschlagenen Ansätzen.`,
-      `DeepSeek's Konsenszusammenfassung:\n\nMeine hoch-präzise Analyse der Diskussion ergibt diese Übereinstimmungspunkte:\n\n1. Für "${prompt}" existiert ein mathematisch nachweisbarer Konsensbereich mit 87% Überlappung der verschiedenen Lösungsvorschläge.\n2. Die fundamentalen Prinzipien sind nicht strittig, nur ihre Implementierungsdetails.\n3. Eine optimierte Synthese der vorgeschlagenen Ansätze bietet die höchste Lösungsqualität.`,
-    ],
-  };
-
-  const llmResponses = consensusResponses[llmId] || ["Keine Konsensdaten verfügbar"];
-  const randomResponse = llmResponses[Math.floor(Math.random() * llmResponses.length)];
-  return randomResponse;
-};
-
 const Index: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("chat");
   const [conversationState, setConversationState] = useState<ConversationState>({
@@ -188,7 +62,8 @@ const Index: React.FC = () => {
     isTyping: {},
   });
   const [consensusLoading, setConsensusLoading] = useState(false);
-
+  const [apiKeys, setApiKeys] = useState<ApiKeys>({});
+  
   const toggleLlmSelection = (llmId: string) => {
     setConversationState((prev) => ({
       ...prev,
@@ -198,7 +73,7 @@ const Index: React.FC = () => {
     }));
   };
 
-  const handleSendPrompt = (prompt: string) => {
+  const handleSendPrompt = async (prompt: string) => {
     const userMessageId = uuidv4();
     const userMessage: Message = {
       id: userMessageId,
@@ -225,32 +100,45 @@ const Index: React.FC = () => {
       isTyping: newIsTyping,
     }));
 
-    activeLlms.forEach((llm) => {
+    for (const llm of activeLlms) {
+      // Zufällige Verzögerung für natürlicheres Antwortverhalten
       const responseTime = 
         Math.random() * 
           (RESPONSE_TIMES[llm.id as keyof typeof RESPONSE_TIMES].max - 
           RESPONSE_TIMES[llm.id as keyof typeof RESPONSE_TIMES].min) + 
         RESPONSE_TIMES[llm.id as keyof typeof RESPONSE_TIMES].min;
       
-      setTimeout(() => {
-        const llmResponse = mockLlmResponse(llm.id, prompt);
-        const llmMessage: Message = {
-          id: uuidv4(),
-          content: llmResponse,
-          sender: llm.id,
-          timestamp: new Date(),
-        };
+      setTimeout(async () => {
+        try {
+          // API-Aufrufe mit Fallback auf Mock-Daten
+          const llmResponse = await getLlmResponse(llm.id, prompt, apiKeys);
+          
+          const llmMessage: Message = {
+            id: uuidv4(),
+            content: llmResponse,
+            sender: llm.id,
+            timestamp: new Date(),
+          };
 
-        setConversationState((prev) => ({
-          ...prev,
-          messages: [...prev.messages, llmMessage],
-          isTyping: { ...prev.isTyping, [llm.id]: false },
-        }));
+          setConversationState((prev) => ({
+            ...prev,
+            messages: [...prev.messages, llmMessage],
+            isTyping: { ...prev.isTyping, [llm.id]: false },
+          }));
+        } catch (error) {
+          console.error(`Fehler bei ${llm.id} Anfrage:`, error);
+          toast.error(`Fehler bei ${llm.name}: ${(error as Error).message}`);
+          
+          setConversationState((prev) => ({
+            ...prev,
+            isTyping: { ...prev.isTyping, [llm.id]: false },
+          }));
+        }
       }, responseTime);
-    });
+    }
   };
 
-  const handleDirectConversation = (fromModel: string, toModel: string) => {
+  const handleDirectConversation = async (fromModel: string, toModel: string) => {
     const fromLlm = conversationState.activeModels.find((llm) => llm.id === fromModel);
     const toLlm = conversationState.activeModels.find((llm) => llm.id === toModel);
 
@@ -259,25 +147,49 @@ const Index: React.FC = () => {
       return;
     }
 
+    // Kontext für die Konversation erstellen - die letzten 3 Nachrichten
+    const recentMessages = conversationState.messages
+      .filter(msg => msg.sender === toModel || msg.sender === "user")
+      .slice(-3)
+      .map(msg => `${msg.sender}: ${msg.content}`)
+      .join("\n\n");
+
     setConversationState((prev) => ({
       ...prev,
       isTyping: { ...prev.isTyping, [fromModel]: true },
     }));
 
-    setTimeout(() => {
-      const directMessage: Message = {
-        id: uuidv4(),
-        content: mockDirectConversation(fromModel, toModel),
-        sender: fromModel,
-        timestamp: new Date(),
-        respondingTo: toModel,
-      };
+    setTimeout(async () => {
+      try {
+        const directConversationResponse = await getDirectConversation(
+          fromModel, 
+          toModel, 
+          apiKeys,
+          recentMessages
+        );
+        
+        const directMessage: Message = {
+          id: uuidv4(),
+          content: directConversationResponse,
+          sender: fromModel,
+          timestamp: new Date(),
+          respondingTo: toModel,
+        };
 
-      setConversationState((prev) => ({
-        ...prev,
-        messages: [...prev.messages, directMessage],
-        isTyping: { ...prev.isTyping, [fromModel]: false },
-      }));
+        setConversationState((prev) => ({
+          ...prev,
+          messages: [...prev.messages, directMessage],
+          isTyping: { ...prev.isTyping, [fromModel]: false },
+        }));
+      } catch (error) {
+        console.error("Fehler bei direkter Konversation:", error);
+        toast.error(`Fehler bei direkter Konversation: ${(error as Error).message}`);
+        
+        setConversationState((prev) => ({
+          ...prev,
+          isTyping: { ...prev.isTyping, [fromModel]: false },
+        }));
+      }
     }, 2000);
   };
 
@@ -306,20 +218,43 @@ const Index: React.FC = () => {
 
       delay += Math.random() * 2000 + 1500;
 
-      setTimeout(() => {
-        const message: Message = {
-          id: uuidv4(),
-          content: mockDirectConversation(currentLlm.id, nextLlm.id),
-          sender: currentLlm.id,
-          respondingTo: nextLlm.id,
-          timestamp: new Date(),
-        };
+      setTimeout(async () => {
+        try {
+          // Erstelle Kontext aus vorherigen Nachrichten
+          const recentMessages = conversationState.messages
+            .slice(-5)
+            .map(msg => `${msg.sender}: ${msg.content}`)
+            .join("\n\n");
+            
+          const response = await getDirectConversation(
+            currentLlm.id,
+            nextLlm.id,
+            apiKeys,
+            recentMessages
+          );
+          
+          const message: Message = {
+            id: uuidv4(),
+            content: response,
+            sender: currentLlm.id,
+            respondingTo: nextLlm.id,
+            timestamp: new Date(),
+          };
 
-        setConversationState((prev) => ({
-          ...prev,
-          messages: [...prev.messages, message],
-          isTyping: { ...prev.isTyping, [currentLlm.id]: false },
-        }));
+          setConversationState((prev) => ({
+            ...prev,
+            messages: [...prev.messages, message],
+            isTyping: { ...prev.isTyping, [currentLlm.id]: false },
+          }));
+        } catch (error) {
+          console.error(`Fehler bei Gruppendiskussion (${currentLlm.id}):`, error);
+          toast.error(`Fehler bei ${currentLlm.name}: ${(error as Error).message}`);
+          
+          setConversationState((prev) => ({
+            ...prev,
+            isTyping: { ...prev.isTyping, [currentLlm.id]: false },
+          }));
+        }
       }, delay);
     }
   };
@@ -348,28 +283,62 @@ const Index: React.FC = () => {
       .filter((msg) => msg.sender === "user")
       .pop()?.content || "die aktuelle Frage";
       
-    setTimeout(() => {
-      const consensusMessages = activeLlms.map(llm => ({
-        id: uuidv4(),
-        content: mockLlmConsensus(llm.id, lastPrompt),
-        sender: "consensus",
-        consensusFrom: llm.id,
-        timestamp: new Date(),
-        isConsensus: true,
-      }));
+    // Sammle die relevanten Nachrichten für den Konsens
+    const relevantMessages = conversationState.messages
+      .filter(msg => msg.sender !== "user" && msg.sender !== "consensus")
+      .slice(-10)
+      .map(msg => `${msg.sender}: ${msg.content}`);
 
-      setConversationState((prev) => ({
-        ...prev,
-        messages: [
-          ...prev.messages,
-          ...consensusMessages
-        ],
-        isTyping: Object.fromEntries(
-          Object.entries(prev.isTyping).map(([key]) => [key, false])
-        ),
-      }));
+    const consensusPromises = activeLlms.map(async (llm) => {
+      try {
+        const consensusResponse = await getLlmConsensus(
+          llm.id,
+          lastPrompt,
+          apiKeys,
+          relevantMessages
+        );
+        
+        return {
+          id: uuidv4(),
+          content: consensusResponse,
+          sender: "consensus",
+          consensusFrom: llm.id,
+          timestamp: new Date(),
+          isConsensus: true,
+        };
+      } catch (error) {
+        console.error(`Fehler bei Konsensbildung (${llm.id}):`, error);
+        toast.error(`Fehler bei ${llm.name} Konsensbildung: ${(error as Error).message}`);
+        
+        return {
+          id: uuidv4(),
+          content: `Fehler bei der Konsensbildung: ${(error as Error).message}`,
+          sender: "consensus",
+          consensusFrom: llm.id,
+          timestamp: new Date(),
+          isConsensus: true,
+        };
+      }
+    });
 
-      setConsensusLoading(false);
+    // Warte auf alle Konsens-Antworten
+    setTimeout(async () => {
+      try {
+        const consensusMessages = await Promise.all(consensusPromises);
+        
+        setConversationState((prev) => ({
+          ...prev,
+          messages: [...prev.messages, ...consensusMessages],
+          isTyping: Object.fromEntries(
+            Object.entries(prev.isTyping).map(([key]) => [key, false])
+          ),
+        }));
+      } catch (error) {
+        console.error("Fehler bei Konsensbildung:", error);
+        toast.error(`Fehler bei der Konsensbildung: ${(error as Error).message}`);
+      } finally {
+        setConsensusLoading(false);
+      }
     }, 3500);
   };
 
@@ -394,17 +363,24 @@ const Index: React.FC = () => {
     }));
   };
 
+  const handleApiKeysChange = (keys: ApiKeys) => {
+    setApiKeys(keys);
+  };
+
   const consensusMessages = conversationState.messages.filter((msg) => msg.isConsensus);
   const isAnyLlmTyping = Object.values(conversationState.isTyping).some((isTyping) => isTyping);
 
   return (
     <div className="container py-6">
-      <ConversationHeader
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        onNewConversation={handleNewConversation}
-        onClearConversation={handleClearConversation}
-      />
+      <div className="flex justify-between items-center mb-6">
+        <ConversationHeader
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          onNewConversation={handleNewConversation}
+          onClearConversation={handleClearConversation}
+        />
+        <ApiKeysManager onKeysChange={handleApiKeysChange} />
+      </div>
 
       <div className="mb-6">
         <PromptInput
