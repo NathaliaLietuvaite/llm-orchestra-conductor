@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,23 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// LLM Colors
+				chatgpt: {
+					DEFAULT: '#10a37f',
+					light: '#e7f6f3'
+				},
+				gemini: {
+					DEFAULT: '#4285f4',
+					light: '#e6f0fe'
+				},
+				claude: {
+					DEFAULT: '#8e45dd',
+					light: '#f3ebfb'
+				},
+				deepseek: {
+					DEFAULT: '#3e62f8', 
+					light: '#e7edfd'
 				}
 			},
 			borderRadius: {
@@ -84,11 +102,21 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'fade-in': {
+					'0%': { opacity: '0' },
+					'100%': { opacity: '1' }
+				},
+				'typing': {
+					'0%': { width: '0%' },
+					'100%': { width: '100%' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'fade-in': 'fade-in 0.5s ease-in-out',
+				'typing': 'typing 2s steps(40, end)'
 			}
 		}
 	},
