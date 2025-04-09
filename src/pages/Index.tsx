@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { LLM, Message, ConversationState } from "@/types";
 import ConversationHeader from "@/components/ConversationHeader";
@@ -44,7 +43,6 @@ const DEFAULT_LLMS: LLM[] = [
   },
 ];
 
-// Mocking LLM response times (in ms)
 const RESPONSE_TIMES = {
   chatgpt: { min: 1500, max: 3000 },
   claude: { min: 2000, max: 4000 },
@@ -52,7 +50,6 @@ const RESPONSE_TIMES = {
   deepseek: { min: 1800, max: 3500 },
 };
 
-// Mocking LLM responses - this would be replaced with actual API calls
 const mockLlmResponse = (llmId: string, prompt: string): string => {
   const responses: Record<string, string[]> = {
     chatgpt: [
@@ -81,7 +78,6 @@ const mockLlmResponse = (llmId: string, prompt: string): string => {
   return `${randomResponse}\n\nZu Ihrer Anfrage "${prompt}":\n\nHier ist meine ausführliche Antwort...`;
 };
 
-// Mocking a response for direct conversation
 const mockDirectConversation = (fromLlmId: string, toLlmId: string, prompt?: string): string => {
   const perspectives: Record<string, Record<string, string[]>> = {
     chatgpt: {
@@ -148,7 +144,6 @@ const mockDirectConversation = (fromLlmId: string, toLlmId: string, prompt?: str
   return randomResponse;
 };
 
-// Mock consensus generation
 const mockConsensus = (prompt: string): string => {
   return `Basierend auf allen Perspektiven, lassen sich folgende Kernpunkte als Konsens festhalten:
 
@@ -179,7 +174,6 @@ const Index: React.FC = () => {
   };
 
   const handleSendPrompt = (prompt: string) => {
-    // Add user message
     const userMessageId = uuidv4();
     const userMessage: Message = {
       id: userMessageId,
@@ -195,7 +189,6 @@ const Index: React.FC = () => {
       return;
     }
 
-    // Set initial typing state for all active LLMs
     const newIsTyping: Record<string, boolean> = {};
     activeLlms.forEach((llm) => {
       newIsTyping[llm.id] = true;
@@ -207,9 +200,7 @@ const Index: React.FC = () => {
       isTyping: newIsTyping,
     }));
 
-    // Process responses for each active LLM
     activeLlms.forEach((llm) => {
-      // Simulate response time
       const responseTime = 
         Math.random() * 
           (RESPONSE_TIMES[llm.id as keyof typeof RESPONSE_TIMES].max - 
@@ -243,13 +234,11 @@ const Index: React.FC = () => {
       return;
     }
 
-    // Set typing indicator
     setConversationState((prev) => ({
       ...prev,
       isTyping: { ...prev.isTyping, [fromModel]: true },
     }));
 
-    // Simulate response time
     setTimeout(() => {
       const directMessage: Message = {
         id: uuidv4(),
@@ -275,7 +264,6 @@ const Index: React.FC = () => {
       return;
     }
 
-    // Set all LLMs to typing
     const newIsTyping: Record<string, boolean> = {};
     activeLlms.forEach((llm) => {
       newIsTyping[llm.id] = true;
@@ -286,7 +274,6 @@ const Index: React.FC = () => {
       isTyping: newIsTyping,
     }));
 
-    // Generate responses in sequence
     let delay = 0;
     for (let i = 0; i < activeLlms.length; i++) {
       const currentLlm = activeLlms[i];
@@ -320,10 +307,8 @@ const Index: React.FC = () => {
       return;
     }
 
-    // Set consensus loading
     setConsensusLoading(true);
 
-    // Simulate consensus generation
     setTimeout(() => {
       const lastPrompt = conversationState.messages
         .filter((msg) => msg.sender === "user")
@@ -375,6 +360,15 @@ const Index: React.FC = () => {
         onClearConversation={handleClearConversation}
       />
 
+      <div className="mb-6">
+        <PromptInput
+          llms={conversationState.activeModels}
+          onSendPrompt={handleSendPrompt}
+          onToggleLlm={toggleLlmSelection}
+          isTyping={isAnyLlmTyping}
+        />
+      </div>
+
       <ConversationControls
         llms={conversationState.activeModels}
         onDirectConversation={handleDirectConversation}
@@ -394,15 +388,6 @@ const Index: React.FC = () => {
         llms={conversationState.activeModels}
         isLoading={consensusLoading}
       />
-
-      <div className="mt-6">
-        <PromptInput
-          llms={conversationState.activeModels}
-          onSendPrompt={handleSendPrompt}
-          onToggleLlm={toggleLlmSelection}
-          isTyping={isAnyLlmTyping}
-        />
-      </div>
     </div>
   );
 };

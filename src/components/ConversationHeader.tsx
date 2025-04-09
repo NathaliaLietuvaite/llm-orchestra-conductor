@@ -20,7 +20,7 @@ const ConversationHeader: React.FC<ConversationHeaderProps> = ({
   return (
     <div className="flex items-center justify-between mb-6">
       <div className="flex items-center gap-4">
-        <h1 className="text-2xl font-bold">LLM Orchester</h1>
+        <h1 className="text-2xl font-bold">Nathalias LLM Boot-Camp</h1>
         <Tabs value={activeTab} onValueChange={onTabChange} className="hidden sm:block">
           <TabsList>
             <TabsTrigger value="chat">Chat</TabsTrigger>
