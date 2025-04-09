@@ -15,6 +15,7 @@ export type Message = {
   timestamp: Date;
   respondingTo?: string;
   isConsensus?: boolean;
+  consensusFrom?: string;
 };
 
 export type ConversationState = {

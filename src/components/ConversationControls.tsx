@@ -6,14 +6,12 @@ import { MessageSquareQuote, Users } from "lucide-react";
 
 interface ConversationControlsProps {
   llms: LLM[];
-  onDirectConversation: (fromModel: string, toModel: string) => void;
   onGroupDiscussion: () => void;
   onRequestConsensus: () => void;
 }
 
 const ConversationControls: React.FC<ConversationControlsProps> = ({
   llms,
-  onDirectConversation,
   onGroupDiscussion,
   onRequestConsensus,
 }) => {

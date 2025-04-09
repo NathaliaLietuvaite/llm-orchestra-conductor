@@ -154,6 +154,31 @@ const mockConsensus = (prompt: string): string => {
 Zusammenfassend kann man sagen, dass die Antwort auf "${prompt}" die folgenden Aspekte berücksichtigen sollte...`;
 };
 
+const mockLlmConsensus = (llmId: string, prompt: string): string => {
+  const consensusResponses: Record<string, string[]> = {
+    chatgpt: [
+      `Als ChatGPT sehe ich folgenden Konsens:\n\nNach Analyse der Diskussion sind die zentralen Einigungspunkte:\n\n1. Fast alle Teilnehmer scheinen einer grundlegenden Lösung zuzustimmen, wobei die praktische Umsetzung variiert.\n2. Die zu berücksichtigenden Faktoren sind weitgehend unumstritten, besonders in Bezug auf "${prompt}".\n3. Die von uns verwendeten Methoden führen zu ähnlichen Schlussfolgerungen, was die Robustheit der Antwort unterstreicht.`,
+      `Mein Konsens als ChatGPT:\n\nAus der geführten Diskussion kristallisieren sich diese gemeinsamen Standpunkte heraus:\n\n1. Es gibt Übereinstimmung zu den Kernaspekten, wobei einige Detailfragen unterschiedlich bewertet werden.\n2. Alle Modelle betonen die Wichtigkeit einer ausgewogenen Betrachtung von "${prompt}".\n3. Trotz unterschiedlicher Analysemethoden konvergieren unsere Schlussfolgerungen zu ähnlichen Empfehlungen.`,
+    ],
+    claude: [
+      `Claude's Konsenszusammenfassung:\n\nNach sorgfältiger Analyse der Diskussion erkenne ich folgende Konsenspunkte:\n\n1. Der Dialog zeigt eine grundlegende Einigkeit über die ethischen Dimensionen von "${prompt}".\n2. Während die technischen Ansätze variieren, besteht Einigkeit über die zu erreichenden Ziele.\n3. Die unterschiedlichen epistemischen Zugänge führen zu komplementären Perspektiven, die gemeinsam ein vollständigeres Bild ergeben.`,
+      `Als Claude fasse ich den Konsens so zusammen:\n\nIn unserer Diskussion haben sich diese gemeinsamen Standpunkte herauskristallisiert:\n\n1. Die philosophischen Grundannahmen sind weitgehend geteilt, mit nuancierten Unterschieden in der Interpretation.\n2. Bei "${prompt}" besteht Einigkeit über die grundlegenden Fakten, während die Gewichtung einzelner Aspekte variiert.\n3. Die verschiedenen Analysemethoden ergänzen sich zu einer kohärenten Gesamtperspektive.`,
+    ],
+    gemini: [
+      `Gemini-Konsensanalyse:\n\nMeine datengetriebene Analyse der Diskussion identifiziert diese Konsenspunkte:\n\n1. Quantitative und qualitative Betrachtungen zu "${prompt}" führen zu ähnlichen Schlüssen.\n2. Die Datenlage unterstützt eine multidimensionale Lösung mit breit getragenen Grundprinzipien.\n3. Statistisch signifikante Übereinstimmung besteht in 73% der diskutierten Aspekte.`,
+      `Gemini's Konsenseinschätzung:\n\nAus meiner Analyse der Diskussionsdaten ergeben sich folgende gemeinsame Standpunkte:\n\n1. Die Kernel-Density-Schätzung der Meinungsverteilung zeigt klare Konsensbereiche zu den Hauptaspekten von "${prompt}".\n2. Trotz methodischer Unterschiede konvergieren unsere Analysen zu kompatiblen Lösungsansätzen.\n3. Die zentralen empirischen Befunde werden von allen Diskussionsteilnehmern anerkannt.`,
+    ],
+    deepseek: [
+      `DeepSeek Konsensbeurteilung:\n\nMeine optimierte Analyse der Diskussionsdynamik identifiziert folgende Konsensfelder:\n\n1. Die Algorithmen aller beteiligten Systeme konvergieren zu ähnlichen Lösungsräumen für "${prompt}".\n2. Die Kerndaten werden einheitlich interpretiert, während die Gewichtung spezieller Edge Cases variiert.\n3. Die optimale Lösungsarchitektur kombiniert Elemente aus allen vorgeschlagenen Ansätzen.`,
+      `DeepSeek's Konsenszusammenfassung:\n\nMeine hoch-präzise Analyse der Diskussion ergibt diese Übereinstimmungspunkte:\n\n1. Für "${prompt}" existiert ein mathematisch nachweisbarer Konsensbereich mit 87% Überlappung der verschiedenen Lösungsvorschläge.\n2. Die fundamentalen Prinzipien sind nicht strittig, nur ihre Implementierungsdetails.\n3. Eine optimierte Synthese der vorgeschlagenen Ansätze bietet die höchste Lösungsqualität.`,
+    ],
+  };
+
+  const llmResponses = consensusResponses[llmId] || ["Keine Konsensdaten verfügbar"];
+  const randomResponse = llmResponses[Math.floor(Math.random() * llmResponses.length)];
+  return randomResponse;
+};
+
 const Index: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("chat");
   const [conversationState, setConversationState] = useState<ConversationState>({
@@ -308,27 +333,48 @@ const Index: React.FC = () => {
     }
 
     setConsensusLoading(true);
+    const newIsTyping: Record<string, boolean> = {};
+    
+    activeLlms.forEach((llm) => {
+      newIsTyping[llm.id] = true;
+    });
 
-    setTimeout(() => {
-      const lastPrompt = conversationState.messages
-        .filter((msg) => msg.sender === "user")
-        .pop()?.content || "die aktuelle Frage";
+    setConversationState((prev) => ({
+      ...prev,
+      isTyping: { ...prev.isTyping, ...newIsTyping },
+    }));
+
+    const lastPrompt = conversationState.messages
+      .filter((msg) => msg.sender === "user")
+      .pop()?.content || "die aktuelle Frage";
       
-      const consensusMessage: Message = {
+    setTimeout(() => {
+      const consensusMessages = activeLlms.map(llm => ({
         id: uuidv4(),
-        content: mockConsensus(lastPrompt),
+        content: mockLlmConsensus(llm.id, lastPrompt),
         sender: "consensus",
+        consensusFrom: llm.id,
         timestamp: new Date(),
         isConsensus: true,
-      };
+      }));
 
       setConversationState((prev) => ({
         ...prev,
-        messages: [...prev.messages, consensusMessage],
+        messages: [
+          ...prev.messages,
+          ...consensusMessages
+        ],
+        isTyping: Object.fromEntries(
+          Object.entries(prev.isTyping).map(([key]) => [key, false])
+        ),
       }));
 
       setConsensusLoading(false);
     }, 3500);
+  };
+
+  const handlePromptConsensusQuestion = (question: string) => {
+    handleSendPrompt(question);
   };
 
   const handleNewConversation = () => {
@@ -348,7 +394,7 @@ const Index: React.FC = () => {
     }));
   };
 
-  const consensusMessage = conversationState.messages.find((msg) => msg.isConsensus);
+  const consensusMessages = conversationState.messages.filter((msg) => msg.isConsensus);
   const isAnyLlmTyping = Object.values(conversationState.isTyping).some((isTyping) => isTyping);
 
   return (
@@ -371,7 +417,6 @@ const Index: React.FC = () => {
 
       <ConversationControls
         llms={conversationState.activeModels}
-        onDirectConversation={handleDirectConversation}
         onGroupDiscussion={handleGroupDiscussion}
         onRequestConsensus={handleRequestConsensus}
       />
@@ -384,9 +429,10 @@ const Index: React.FC = () => {
       />
 
       <ConsensusView
-        consensusMessage={consensusMessage}
+        consensusMessages={consensusMessages}
         llms={conversationState.activeModels}
         isLoading={consensusLoading}
+        onPromptConsensusQuestion={handlePromptConsensusQuestion}
       />
     </div>
   );
