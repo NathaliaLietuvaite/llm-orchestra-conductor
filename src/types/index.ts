@@ -21,6 +21,13 @@ export type Message = {
   isDevilsAdvocate?: boolean; // Advocatus Diaboli Antwort
 };
 
+export type NathaliaMessage = {
+  id: string;
+  content: string;
+  isUser: boolean;
+  timestamp: Date;
+};
+
 export type ConversationState = {
   messages: Message[];
   activeModels: LLM[];

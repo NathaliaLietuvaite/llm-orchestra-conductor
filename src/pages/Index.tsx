@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { LLM, Message, ConversationState, ApiKeys } from "@/types";
@@ -8,8 +7,12 @@ import PromptInput from "@/components/PromptInput";
 import ConversationControls from "@/components/ConversationControls";
 import ConsensusView from "@/components/ConsensusView";
 import ApiKeysManager from "@/components/ApiKeysManager";
+import ExplainLikeImTen from "@/components/ExplainLikeImTen";
+import NathaliaChatbot from "@/components/NathaliaChatbot";
 import { toast } from "sonner";
 import { getLlmResponse, getDirectConversation, getLlmConsensus } from "@/services/llmService";
+import { Button } from "@/components/ui/button";
+import { HelpCircle } from "lucide-react";
 
 const DEFAULT_LLMS: LLM[] = [
   {
@@ -71,6 +74,7 @@ const Index: React.FC = () => {
   const [explainLoading, setExplainLoading] = useState(false);
   const [devilsAdvocateCounter, setDevilsAdvocateCounter] = useState<Record<string, number>>({});
   const [apiKeys, setApiKeys] = useState<ApiKeys>({});
+  const [nathaliaChatOpen, setNathaliaChatOpen] = useState(false);
   
   const toggleLlmSelection = (llmId: string) => {
     setConversationState((prev) => ({
@@ -496,7 +500,17 @@ const Index: React.FC = () => {
           onNewConversation={handleNewConversation}
           onClearConversation={handleClearConversation}
         />
-        <ApiKeysManager onKeysChange={handleApiKeysChange} />
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            className="flex gap-2 items-center" 
+            onClick={() => setNathaliaChatOpen(true)}
+          >
+            <HelpCircle className="h-4 w-4" />
+            Hilfe
+          </Button>
+          <ApiKeysManager onKeysChange={handleApiKeysChange} />
+        </div>
       </div>
 
       <div className="mb-6">
@@ -531,6 +545,9 @@ const Index: React.FC = () => {
         onExplainRequest={handleExplainLikeImTen}
         explainMessages={explainMessages}
       />
+      
+      {/* Nathalia Chatbot */}
+      <NathaliaChatbot isOpen={nathaliaChatOpen} onClose={() => setNathaliaChatOpen(false)} />
     </div>
   );
 };
