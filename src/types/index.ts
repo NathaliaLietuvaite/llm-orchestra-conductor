@@ -6,6 +6,7 @@ export type LLM = {
   color: string;
   lightColor: string;
   selected: boolean;
+  devilsAdvocate?: boolean; // Advocatus Diaboli Modus
 };
 
 export type Message = {
@@ -16,6 +17,8 @@ export type Message = {
   respondingTo?: string;
   isConsensus?: boolean;
   consensusFrom?: string;
+  isExplainLikeIm10?: boolean; // Erklärung für 10-Jährige
+  isDevilsAdvocate?: boolean; // Advocatus Diaboli Antwort
 };
 
 export type ConversationState = {
@@ -31,4 +34,3 @@ export type ApiKeys = {
   google?: string;   // für Gemini
   deepseek?: string;  // für DeepSeek
 };
-

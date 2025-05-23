@@ -19,6 +19,7 @@ const DEFAULT_LLMS: LLM[] = [
     color: "#10a37f",
     lightColor: "#e7f6f3",
     selected: true,
+    devilsAdvocate: false,
   },
   {
     id: "claude",
@@ -27,6 +28,7 @@ const DEFAULT_LLMS: LLM[] = [
     color: "#8e45dd",
     lightColor: "#f3ebfb",
     selected: true,
+    devilsAdvocate: false,
   },
   {
     id: "gemini",
@@ -35,6 +37,7 @@ const DEFAULT_LLMS: LLM[] = [
     color: "#4285f4",
     lightColor: "#e6f0fe",
     selected: true,
+    devilsAdvocate: false,
   },
   {
     id: "deepseek",
@@ -43,6 +46,7 @@ const DEFAULT_LLMS: LLM[] = [
     color: "#3e62f8",
     lightColor: "#e7edfd",
     selected: true,
+    devilsAdvocate: false,
   },
 ];
 
@@ -53,6 +57,8 @@ const RESPONSE_TIMES = {
   deepseek: { min: 1800, max: 3500 },
 };
 
+const MAX_DEVILS_ADVOCATE_RESPONSES = 100;
+
 const Index: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("chat");
   const [conversationState, setConversationState] = useState<ConversationState>({
@@ -62,6 +68,8 @@ const Index: React.FC = () => {
     isTyping: {},
   });
   const [consensusLoading, setConsensusLoading] = useState(false);
+  const [explainLoading, setExplainLoading] = useState(false);
+  const [devilsAdvocateCounter, setDevilsAdvocateCounter] = useState<Record<string, number>>({});
   const [apiKeys, setApiKeys] = useState<ApiKeys>({});
   
   const toggleLlmSelection = (llmId: string) => {
@@ -69,6 +77,15 @@ const Index: React.FC = () => {
       ...prev,
       activeModels: prev.activeModels.map((llm) =>
         llm.id === llmId ? { ...llm, selected: !llm.selected } : llm
+      ),
+    }));
+  };
+
+  const toggleDevilsAdvocate = (llmId: string) => {
+    setConversationState((prev) => ({
+      ...prev,
+      activeModels: prev.activeModels.map((llm) =>
+        llm.id === llmId ? { ...llm, devilsAdvocate: !llm.devilsAdvocate } : llm
       ),
     }));
   };
@@ -111,13 +128,18 @@ const Index: React.FC = () => {
       setTimeout(async () => {
         try {
           // API-Aufrufe mit Fallback auf Mock-Daten
-          const llmResponse = await getLlmResponse(llm.id, prompt, apiKeys);
+          const promptToUse = llm.devilsAdvocate 
+            ? `[Advocatus Diaboli Modus] Stelle alles in Frage und hinterfrage kritisch: ${prompt}` 
+            : prompt;
+          
+          const llmResponse = await getLlmResponse(llm.id, promptToUse, apiKeys);
           
           const llmMessage: Message = {
             id: uuidv4(),
             content: llmResponse,
             sender: llm.id,
             timestamp: new Date(),
+            isDevilsAdvocate: llm.devilsAdvocate,
           };
 
           setConversationState((prev) => ({
@@ -147,6 +169,21 @@ const Index: React.FC = () => {
       return;
     }
 
+    // Überprüfe Counter für Advocatus Diaboli
+    if (fromLlm.devilsAdvocate) {
+      const currentCount = devilsAdvocateCounter[fromModel] || 0;
+      if (currentCount >= MAX_DEVILS_ADVOCATE_RESPONSES) {
+        toast.info(`${fromLlm.name} hat das Maximum von ${MAX_DEVILS_ADVOCATE_RESPONSES} Advocatus Diaboli Antworten erreicht.`);
+        return;
+      }
+      
+      // Inkrementiere Zähler
+      setDevilsAdvocateCounter(prev => ({
+        ...prev,
+        [fromModel]: currentCount + 1
+      }));
+    }
+
     // Kontext für die Konversation erstellen - die letzten 3 Nachrichten
     const recentMessages = conversationState.messages
       .filter(msg => msg.sender === toModel || msg.sender === "user")
@@ -161,11 +198,15 @@ const Index: React.FC = () => {
 
     setTimeout(async () => {
       try {
+        const promptPrefix = fromLlm.devilsAdvocate 
+          ? `[Advocatus Diaboli Modus] Stelle alle Argumente kritisch in Frage: ` 
+          : "";
+          
         const directConversationResponse = await getDirectConversation(
           fromModel, 
           toModel, 
           apiKeys,
-          recentMessages
+          promptPrefix + recentMessages
         );
         
         const directMessage: Message = {
@@ -174,6 +215,7 @@ const Index: React.FC = () => {
           sender: fromModel,
           timestamp: new Date(),
           respondingTo: toModel,
+          isDevilsAdvocate: fromLlm.devilsAdvocate,
         };
 
         setConversationState((prev) => ({
@@ -216,6 +258,21 @@ const Index: React.FC = () => {
       const currentLlm = activeLlms[i];
       const nextLlm = activeLlms[(i + 1) % activeLlms.length];
 
+      // Überprüfe Counter für Advocatus Diaboli
+      if (currentLlm.devilsAdvocate) {
+        const currentCount = devilsAdvocateCounter[currentLlm.id] || 0;
+        if (currentCount >= MAX_DEVILS_ADVOCATE_RESPONSES) {
+          toast.info(`${currentLlm.name} hat das Maximum von ${MAX_DEVILS_ADVOCATE_RESPONSES} Advocatus Diaboli Antworten erreicht.`);
+          continue;
+        }
+        
+        // Inkrementiere Zähler
+        setDevilsAdvocateCounter(prev => ({
+          ...prev,
+          [currentLlm.id]: currentCount + 1
+        }));
+      }
+
       delay += Math.random() * 2000 + 1500;
 
       setTimeout(async () => {
@@ -226,11 +283,15 @@ const Index: React.FC = () => {
             .map(msg => `${msg.sender}: ${msg.content}`)
             .join("\n\n");
             
+          const promptPrefix = currentLlm.devilsAdvocate 
+            ? `[Advocatus Diaboli Modus] Stelle alle Argumente kritisch in Frage: ` 
+            : "";
+            
           const response = await getDirectConversation(
             currentLlm.id,
             nextLlm.id,
             apiKeys,
-            recentMessages
+            promptPrefix + recentMessages
           );
           
           const message: Message = {
@@ -239,6 +300,7 @@ const Index: React.FC = () => {
             sender: currentLlm.id,
             respondingTo: nextLlm.id,
             timestamp: new Date(),
+            isDevilsAdvocate: currentLlm.devilsAdvocate,
           };
 
           setConversationState((prev) => ({
@@ -342,6 +404,58 @@ const Index: React.FC = () => {
     }, 3500);
   };
 
+  const handleExplainLikeImTen = () => {
+    const activeLlms = conversationState.activeModels.filter((llm) => llm.selected);
+    
+    if (activeLlms.length === 0) {
+      toast.error("Es muss mindestens ein LLM ausgewählt sein.");
+      return;
+    }
+
+    setExplainLoading(true);
+    
+    // Wähle ein zufälliges LLM für die Erklärung
+    const randomIndex = Math.floor(Math.random() * activeLlms.length);
+    const selectedLlm = activeLlms[randomIndex];
+    
+    // Sammle die relevanten Nachrichten für die Erklärung
+    const relevantMessages = conversationState.messages
+      .slice(-10)
+      .map(msg => `${msg.sender}: ${msg.content}`)
+      .join("\n\n");
+
+    setTimeout(async () => {
+      try {
+        // API-Aufruf für die kindgerechte Erklärung
+        const prompt = `Erkläre die folgende Diskussion, als wäre ich 10 Jahre alt. Verwende einfache Worte und kurze Sätze. Erkläre komplizierte Konzepte mit Analogien, die ein Kind verstehen kann:\n\n${relevantMessages}`;
+        
+        const explainResponse = await getLlmResponse(
+          selectedLlm.id,
+          prompt,
+          apiKeys
+        );
+        
+        const explainMessage: Message = {
+          id: uuidv4(),
+          content: explainResponse,
+          sender: selectedLlm.id,
+          timestamp: new Date(),
+          isExplainLikeIm10: true,
+        };
+
+        setConversationState((prev) => ({
+          ...prev,
+          messages: [...prev.messages, explainMessage],
+        }));
+      } catch (error) {
+        console.error("Fehler bei kindgerechter Erklärung:", error);
+        toast.error(`Fehler bei kindgerechter Erklärung: ${(error as Error).message}`);
+      } finally {
+        setExplainLoading(false);
+      }
+    }, 2000);
+  };
+
   const handlePromptConsensusQuestion = (question: string) => {
     handleSendPrompt(question);
   };
@@ -353,6 +467,7 @@ const Index: React.FC = () => {
       prompt: "",
       isTyping: {},
     });
+    setDevilsAdvocateCounter({});
   };
 
   const handleClearConversation = () => {
@@ -361,6 +476,7 @@ const Index: React.FC = () => {
       messages: [],
       isTyping: {},
     }));
+    setDevilsAdvocateCounter({});
   };
 
   const handleApiKeysChange = (keys: ApiKeys) => {
@@ -368,6 +484,7 @@ const Index: React.FC = () => {
   };
 
   const consensusMessages = conversationState.messages.filter((msg) => msg.isConsensus);
+  const explainMessages = conversationState.messages.filter((msg) => msg.isExplainLikeIm10);
   const isAnyLlmTyping = Object.values(conversationState.isTyping).some((isTyping) => isTyping);
 
   return (
@@ -395,6 +512,7 @@ const Index: React.FC = () => {
         llms={conversationState.activeModels}
         onGroupDiscussion={handleGroupDiscussion}
         onRequestConsensus={handleRequestConsensus}
+        onToggleDevilsAdvocate={toggleDevilsAdvocate}
       />
 
       <LlmGrid
@@ -408,7 +526,10 @@ const Index: React.FC = () => {
         consensusMessages={consensusMessages}
         llms={conversationState.activeModels}
         isLoading={consensusLoading}
+        isExplainLoading={explainLoading}
         onPromptConsensusQuestion={handlePromptConsensusQuestion}
+        onExplainRequest={handleExplainLikeImTen}
+        explainMessages={explainMessages}
       />
     </div>
   );
