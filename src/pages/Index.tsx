@@ -8,7 +8,7 @@ import ConsensusView from "@/components/ConsensusView";
 import ApiKeysManager from "@/components/ApiKeysManager";
 import NathaliaChatbot from "@/components/NathaliaChatbot";
 import { Button } from "@/components/ui/button";
-import { HelpCircle } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ConversationProvider, useConversation } from "@/contexts/ConversationContext";
 import { ApiKeysProvider, useApiKeys } from "@/hooks/useApiKeys";
 import { useConversationHandlers } from "@/hooks/useConversationHandlers";
@@ -54,11 +54,17 @@ const ConversationContainer: React.FC = () => {
         <div className="flex items-center gap-2">
           <Button 
             variant="outline" 
-            className="flex gap-2 items-center" 
+            className="flex items-center gap-3 p-2 h-auto"
             onClick={() => setNathaliaChatOpen(true)}
           >
-            <HelpCircle className="h-4 w-4" />
-            Hilfe
+            <Avatar className="h-14 w-14">
+              <AvatarImage src="/lovable-uploads/21a92d13-4168-440b-9792-d9861a359ba4.png" alt="Nathalia" />
+              <AvatarFallback>NA</AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col items-start">
+              <span className="font-semibold text-lg">Fragen zum System?</span>
+              <span className="text-sm">Ich beantworte sie gerne</span>
+            </div>
           </Button>
           <ApiKeysManager onKeysChange={handleApiKeysChange} />
         </div>

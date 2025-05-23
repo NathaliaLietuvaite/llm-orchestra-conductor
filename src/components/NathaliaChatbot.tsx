@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { NathaliaMessage } from "@/types";
 import { v4 as uuidv4 } from "uuid";
-import { Send, HelpCircle, X } from "lucide-react";
+import { Send, X } from "lucide-react";
 import { format } from "date-fns";
 
 const NATHALIA_AVATAR = "https://i.imgur.com/gWVHDXB.png"; // Ein Placeholder-Avatar für Nathalia
@@ -106,7 +105,7 @@ const NathaliaChatbot: React.FC<NathaliaChatbotProps> = ({ isOpen, onClose }) =>
       <CardHeader className="bg-purple-100 p-3 flex flex-row justify-between items-center">
         <div className="flex items-center gap-2">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={NATHALIA_AVATAR} alt="Nathalia" />
+            <AvatarImage src="/lovable-uploads/21a92d13-4168-440b-9792-d9861a359ba4.png" alt="Nathalia" />
             <AvatarFallback>NA</AvatarFallback>
           </Avatar>
           <CardTitle className="text-sm font-medium">
