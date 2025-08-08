@@ -54,16 +54,15 @@ const ConversationContainer: React.FC = () => {
         <div className="flex items-center gap-2">
           <Button 
             variant="outline" 
-            className="flex items-center gap-3 p-2 h-auto"
+            className="flex items-center gap-4 p-4 h-auto hover-scale rounded-xl"
             onClick={() => setNathaliaChatOpen(true)}
           >
-            <Avatar className="h-14 w-14">
-              <AvatarImage src="/lovable-uploads/21a92d13-4168-440b-9792-d9861a359ba4.png" alt="Nathalia" />
+            <Avatar className="h-24 w-24">
+              <AvatarImage src="/lovable-uploads/21a92d13-4168-440b-9792-d9861a359ba4.png" alt="Nathalia Support Chatbot" />
               <AvatarFallback>NA</AvatarFallback>
             </Avatar>
             <div className="flex flex-col items-start">
-              <span className="font-semibold text-lg">Fragen zum System?</span>
-              <span className="text-sm">Ich beantworte sie gerne</span>
+              <span className="font-semibold text-2xl leading-snug">Fragen zum System beantworte ich gerne</span>
             </div>
           </Button>
           <ApiKeysManager onKeysChange={handleApiKeysChange} />
